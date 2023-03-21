@@ -3,6 +3,7 @@ package etu2054.framework.servlet;
 import etu2054.framework.Mapping;
 import etu2054.framework.annotations.UrlAnnot;
 import etu2054.framework.model.Personne;
+import etu2054.framework.util.StaxParser;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -24,8 +25,9 @@ public class FrontServlet extends HttpServlet {
         super.init();
         mappingUrls = new HashMap<String, Mapping>();
         File directory = null;
-        String path = "";
         try {
+            StaxParser staxParser = new StaxParser();
+            String path = staxParser.getConfig("/configWeb.xml");
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (classLoader == null) {
                 throw new ClassNotFoundException("Can't get class loader.");
@@ -35,6 +37,7 @@ public class FrontServlet extends HttpServlet {
                 throw new ClassNotFoundException("No resource for " + path);
             }
             directory = new File(resource.getFile());
+            path = path.replace('/','.');
             if (directory.exists()) {
                 ArrayList<Class> classes = getAllClasses(directory,path);
                 for(Class c:classes){
