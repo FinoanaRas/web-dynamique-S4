@@ -18,12 +18,10 @@ public class StaxParser {
     }
 
     @SuppressWarnings({"null" })
-    public String getConfig(String configFile) throws XMLStreamException, FileNotFoundException {
+    public String getConfig(InputStream in) throws XMLStreamException, FileNotFoundException {
         try {
             // First, create a new XMLInputFactory
             XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-            // Setup a new eventReader
-            InputStream in = getClass().getResourceAsStream(configFile);
             XMLEventReader eventReader = inputFactory.createXMLEventReader(in);
             // read the XML document
             String path = "";
