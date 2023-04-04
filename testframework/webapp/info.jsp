@@ -1,3 +1,7 @@
+<%@ page import="model.Personne, java.util.ArrayList"%>
+<%
+    ArrayList<Personne> liste = (ArrayList<Personne>)request.getAttribute("lst");
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +11,11 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Info page jsp</h1>
+    <h1>Informations: liste de personnes</h1>
+    <ul>
+        <% for(Personne p: liste) { %>
+            <li><%= p.getName() %></li>
+        <% } %>
+    </ul>
 </body>
 </html>
