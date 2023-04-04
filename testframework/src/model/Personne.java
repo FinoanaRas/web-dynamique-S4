@@ -1,4 +1,5 @@
 package model;
+import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
 
 public class Personne {
@@ -25,7 +26,8 @@ public class Personne {
     public Personne() {
     }
 
-    @UrlAnnot(url="info")
-    public void info(){
+    @UrlAnnot(url="info/")
+    public ModelView info(){
+        return new ModelView("../info.jsp");
     }
 }

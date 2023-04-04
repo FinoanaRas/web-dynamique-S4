@@ -1,6 +1,7 @@
 package etu2054.framework.servlet;
 
 import etu2054.framework.Mapping;
+import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
 import etu2054.framework.util.StaxParser;
 
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.net.URLDecoder;
 
-@WebServlet(name = "FrontServlet", value = "/*")
+@WebServlet(name = "FrontServlet", value = "/")
 public class FrontServlet extends HttpServlet {
     HashMap<String, Mapping> mappingUrls;
 
@@ -92,10 +93,46 @@ public class FrontServlet extends HttpServlet {
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException{
         PrintWriter out = response.getWriter();
-       for(String k: mappingUrls.keySet()){
-           out.println("key: "+k);
-           out.println("class: "+mappingUrls.get(k).getClassName()+" method: "+mappingUrls.get(k).getMethod());
-       }
+        String url = request.getRequestURL().toString();
+        out.println(url);
+        String[] parts = url.split("http://localhost:8082/testframework/");
+        if(parts.length>1){
+            url = parts[1];
+            out.println(url);
+        }
+        if(mappingUrls.containsKey(url)){
+            Mapping mapping = mappingUrls.get(url);
+            out.println("in mapping");
+            try {
+                Class classe = Class.forName(mapping.getClassName());
+                Method method = classe.getDeclaredMethod(mapping.getMethod());
+                Class returnType = method.getReturnType();
+                if(returnType.equals(ModelView.class)){
+                    out.println("has modelView");
+                    Object obj = classe.getConstructor().newInstance();
+                    ModelView modelView = (ModelView) method.invoke(obj);
+                    String view = modelView.getView();
+                    request.getRequestDispatcher(view).forward(request,response);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace(out);
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
+            } catch (ServletException e) {
+                throw new RuntimeException(e);
+            }
+        }
+//        for(String k: mappingUrls.keySet()){
+//            out.println("key: "+k);
+//            out.println("class: "+mappingUrls.get(k).getClassName()+" method: "+mappingUrls.get(k).getMethod());
+//        }
     }
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
