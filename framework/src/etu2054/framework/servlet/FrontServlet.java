@@ -112,6 +112,12 @@ public class FrontServlet extends HttpServlet {
                     Object obj = classe.getConstructor().newInstance();
                     ModelView modelView = (ModelView) method.invoke(obj);
                     String view = modelView.getView();
+                    HashMap<String,Object> modelViewData = modelView.getData();
+                    if(modelViewData.size()>0){
+                        for(String k: modelViewData.keySet()){
+                            request.setAttribute(k,modelViewData.get(k));
+                        }
+                    }
                     request.getRequestDispatcher(view).forward(request,response);
                 }
             } catch (ClassNotFoundException e) {
