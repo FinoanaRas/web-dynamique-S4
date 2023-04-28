@@ -12,11 +12,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.Double;
+import java.lang.Integer;
+import java.lang.Float;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Enumeration;
+import java.sql.Date;
 import java.net.URLDecoder;
 
 @WebServlet(name = "FrontServlet", value = "/")
@@ -54,6 +60,50 @@ public class FrontServlet extends HttpServlet {
         } catch (Exception x) {
             throw new ServletException(x.getMessage());
         }
+    }
+
+    public void setData(Class classe,Object obj, String param,String paramgot) throws Exception{
+        Field f = classe.getDeclaredField(param);
+        Class type = getTypeMethod(getMethod("get", f,classe));
+        Method setMethod = getMethod("set",f,classe);
+        if (type==int.class){
+            setMethod.invoke(obj,Integer.parseInt(paramgot));
+        }else if ( type==double.class) {
+            setMethod.invoke(obj,Double.parseDouble(paramgot));
+        }else if ( type==float.class) {
+            setMethod.invoke(obj,Float.parseFloat(paramgot));
+        }else if(type == Date.class){
+            setMethod.invoke(obj,Date.valueOf(paramgot));
+        }else{
+            Object parametre = paramgot;
+            setMethod.invoke(obj,type.cast(parametre));
+        }
+    }
+
+    public Class getTypeMethod(Method method)
+    {
+        return method.getReturnType();
+    }
+    public Method getMethod(String prefix, Field f, Class classe) throws NoSuchMethodException {
+        String field = f.getName();
+        String name = prefix+field;
+        Method[] list = classe.getDeclaredMethods();
+        for(Method m: list){
+            if(m.getName().equalsIgnoreCase(name)){
+                return m;
+            }
+        }
+        return null;
+    }
+
+    public boolean checkField(String fieldName, Class classe){
+        Field[] fields = classe.getDeclaredFields();
+        for(Field f: fields){
+            if(fieldName.equals(f.getName())){
+                return true;
+            }
+        }
+        return false;
     }
     private ArrayList<Class> getAllClasses(File directory,String path){
         ArrayList<Class> classes = new ArrayList<Class>();
@@ -95,45 +145,51 @@ public class FrontServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         String url = request.getRequestURL().toString();
         out.println(url);
-        String[] parts = url.split("http://localhost:8082/testframework/");
-        if(parts.length>1){
-            url = parts[1];
-            out.println(url);
-        }
-        if(mappingUrls.containsKey(url)){
-            Mapping mapping = mappingUrls.get(url);
-            out.println("in mapping");
-            try {
-                Class classe = Class.forName(mapping.getClassName());
-                Method method = classe.getDeclaredMethod(mapping.getMethod());
-                Class returnType = method.getReturnType();
-                if(returnType.equals(ModelView.class)){
-                    out.println("has modelView");
+        try{
+            StaxParser staxParser = new StaxParser();
+            ServletContext servletContext = getServletContext();
+            InputStream in = servletContext.getResourceAsStream("/WEB-INF/webConfig.xml");
+            String path = staxParser.getRequestUrlHeader(in);
+            String[] parts = url.split(path);
+            if(parts.length>1){
+                url = parts[1];
+                out.println(url);
+            }
+            if(mappingUrls.containsKey(url)){
+                Mapping mapping = mappingUrls.get(url);
+                out.println("in mapping");
+                    Class classe = Class.forName(mapping.getClassName());
+                    Method method = classe.getDeclaredMethod(mapping.getMethod());
+                    Class returnType = method.getReturnType();
                     Object obj = classe.getConstructor().newInstance();
-                    ModelView modelView = (ModelView) method.invoke(obj);
-                    String view = modelView.getView();
-                    HashMap<String,Object> modelViewData = modelView.getData();
-                    if(modelViewData.size()>0){
-                        for(String k: modelViewData.keySet()){
-                            request.setAttribute(k,modelViewData.get(k));
+                    // take parameters
+                    Enumeration<String> formParams = request.getParameterNames();
+                    if(formParams!=null){
+                        while(formParams.hasMoreElements()){
+                            String param = formParams.nextElement();
+                            if(checkField(param,classe)==true){
+                                String paramgot = request.getParameter(param);
+                                setData(classe,obj,param,paramgot);
+                            }
                         }
                     }
-                    request.getRequestDispatcher(view).forward(request,response);
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace(out);
-                throw new RuntimeException(e);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (ServletException e) {
-                throw new RuntimeException(e);
+                    if(returnType.equals(ModelView.class)){
+                        out.println("has modelView");
+                        
+                        ModelView modelView = (ModelView) method.invoke(obj);
+                        String view = modelView.getView();
+                        HashMap<String,Object> modelViewData = modelView.getData();
+                        if(modelViewData.size()>0){
+                            for(String k: modelViewData.keySet()){
+                                request.setAttribute(k,modelViewData.get(k));
+                            }
+                        }
+                        request.getRequestDispatcher(view).forward(request,response);
+                    }
+                
             }
+        }catch(Exception e){
+            e.printStackTrace(out);
         }
 //        for(String k: mappingUrls.keySet()){
 //            out.println("key: "+k);
