@@ -1,3 +1,4 @@
 <Web>
     <Package>model/</Package>
+    <Url>http://localhost:8082/testframework/</Url>
 </Web>

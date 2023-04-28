@@ -15,6 +15,9 @@
     <ul>
         <% for(Personne p: liste) { %>
             <li><%= p.getName() %></li>
+            <li><%= p.getGender() %></li>
+            <li><%= p.getNum() %></li>
+            <li><%= p.getDtn() %></li>
         <% } %>
     </ul>
 </body>
