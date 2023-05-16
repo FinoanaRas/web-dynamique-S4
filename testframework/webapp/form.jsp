@@ -14,5 +14,6 @@
             <input type="number" name="num">
             <input type="submit" value="valider">
         </form>
+        <a href="informations/?id=0">Marie</a>
     </body>
 </html>

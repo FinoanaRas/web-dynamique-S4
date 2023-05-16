@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.Double;
 import java.lang.Integer;
 import java.lang.Float;
@@ -37,7 +38,7 @@ public class FrontServlet extends HttpServlet {
         try {
             StaxParser staxParser = new StaxParser();
             ServletContext servletContext = getServletContext();
-            InputStream in = servletContext.getResourceAsStream("/WEB-INF/webConfig.xml");
+            InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
             String path = staxParser.getConfig(in);
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (classLoader == null) {
@@ -66,12 +67,12 @@ public class FrontServlet extends HttpServlet {
         Field f = classe.getDeclaredField(param);
         Class type = getTypeMethod(getMethod("get", f,classe));
         Method setMethod = getMethod("set",f,classe);
-        if (type==int.class){
-            setMethod.invoke(obj,Integer.parseInt(paramgot));
-        }else if ( type==double.class) {
-            setMethod.invoke(obj,Double.parseDouble(paramgot));
-        }else if ( type==float.class) {
-            setMethod.invoke(obj,Float.parseFloat(paramgot));
+        if (type==Integer.class){
+            setMethod.invoke(obj,Integer.valueOf(paramgot));
+        }else if ( type==Double.class) {
+            setMethod.invoke(obj,Double.valueOf(paramgot));
+        }else if ( type==Float.class) {
+            setMethod.invoke(obj,Float.valueOf(paramgot));
         }else if(type == Date.class){
             setMethod.invoke(obj,Date.valueOf(paramgot));
         }else{
@@ -83,6 +84,15 @@ public class FrontServlet extends HttpServlet {
     public Class getTypeMethod(Method method)
     {
         return method.getReturnType();
+    }
+    public Method getDeclaredMethod(Class classe,String nom){
+        Method[] methodes = classe.getDeclaredMethods();
+        for(Method m: methodes){
+            if(m.getName().equals(nom)){
+                return m;
+            }
+        }
+        return null;
     }
     public Method getMethod(String prefix, Field f, Class classe) throws NoSuchMethodException {
         String field = f.getName();
@@ -148,7 +158,7 @@ public class FrontServlet extends HttpServlet {
         try{
             StaxParser staxParser = new StaxParser();
             ServletContext servletContext = getServletContext();
-            InputStream in = servletContext.getResourceAsStream("/WEB-INF/webConfig.xml");
+            InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
             String path = staxParser.getRequestUrlHeader(in);
             String[] parts = url.split(path);
             if(parts.length>1){
@@ -159,14 +169,16 @@ public class FrontServlet extends HttpServlet {
                 Mapping mapping = mappingUrls.get(url);
                 out.println("in mapping");
                     Class classe = Class.forName(mapping.getClassName());
-                    Method method = classe.getDeclaredMethod(mapping.getMethod());
+                    Method method = getDeclaredMethod(classe,mapping.getMethod());
                     Class returnType = method.getReturnType();
                     Object obj = classe.getConstructor().newInstance();
                     // take parameters
                     Enumeration<String> formParams = request.getParameterNames();
+                    ArrayList<String> parametres = new ArrayList<String>();
                     if(formParams!=null){
                         while(formParams.hasMoreElements()){
                             String param = formParams.nextElement();
+                            parametres.add(param);
                             if(checkField(param,classe)==true){
                                 String paramgot = request.getParameter(param);
                                 setData(classe,obj,param,paramgot);
@@ -175,8 +187,34 @@ public class FrontServlet extends HttpServlet {
                     }
                     if(returnType.equals(ModelView.class)){
                         out.println("has modelView");
-                        
-                        ModelView modelView = (ModelView) method.invoke(obj);
+                        ModelView modelView = new ModelView();
+                        Parameter[] methodParams = method.getParameters();
+                        Class[] types = method.getParameterTypes();
+                        if(methodParams!=null){
+                            ArrayList<Object> listArgs = new ArrayList<Object>();
+                            for(int i=0;i<methodParams.length;i++){
+                                for(String p: parametres){
+                                    if(methodParams[i].getName().equals(p)){
+                                        if (types[i]==Integer.class){
+                                            listArgs.add(Integer.valueOf(request.getParameter(p)));
+                                        }else if ( types[i]==Double.class) {
+                                            listArgs.add(Double.valueOf(request.getParameter(p)));
+                                        }else if ( types[i]==Float.class) {
+                                            listArgs.add(Float.valueOf(request.getParameter(p)));
+                                        }else if(types[i] == Date.class){
+                                            listArgs.add(Date.valueOf(request.getParameter(p)));
+                                        }else{
+                                            listArgs.add(types[i].cast(request.getParameter(p)));
+                                        }
+                                    }
+                                }
+                            }
+                            Object[] args = new Object[listArgs.size()];
+                            args = listArgs.toArray(args);
+                            modelView = (ModelView) method.invoke(obj,args);
+                        }else{
+                            modelView = (ModelView) method.invoke(obj);
+                        }
                         String view = modelView.getView();
                         HashMap<String,Object> modelViewData = modelView.getData();
                         if(modelViewData.size()>0){
