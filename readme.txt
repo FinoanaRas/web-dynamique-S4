@@ -1,4 +1,4 @@
-Framework:
+﻿Framework:
 
 Ajout dans web.xml:
 
@@ -27,7 +27,7 @@ Exemple:
 Les méthodes de controlleur doivent être précédées d'une annotation UrlAnnot
 Exemple:
 
-    @UrlAnnot(url="votreUrl/")
+    @UrlAnnot(url="votreUrl.do")
     votreFonction
 
-l'url doit être suivi d'un /
+l'url doit être suivi d'un .do

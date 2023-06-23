@@ -49,31 +49,31 @@ public class Personne {
         setNum(num);
     }
 
-    @UrlAnnot(url="info/")
+    @UrlAnnot(url="info.do")
     public ModelView info(){
         ModelView modelView = new ModelView();
         ArrayList<Personne> liste = new ArrayList<Personne>();
         liste.add(new Personne(getName(),getGender(),getDtn(),getNum()));
-        modelView.setView("../info.jsp");
+        modelView.setView("./info.jsp");
         modelView.addItem("lst",liste);
         return modelView;
     }
 
-    @UrlAnnot(url="formulaire/")
+    @UrlAnnot(url="formulaire.do")
     public ModelView form(){
         ModelView modelView = new ModelView();
-        modelView.setView("../form.jsp");
+        modelView.setView("./form.jsp");
         return modelView;
     }
 
-    @UrlAnnot(url="informations/")
+    @UrlAnnot(url="informations.do")
     public ModelView spec(Integer id){
         ModelView modelView = new ModelView();
         ArrayList<Personne> liste = new ArrayList<Personne>();
         liste.add(new Personne("Marie","female",Date.valueOf("1998-03-04"),35));
         liste.add(new Personne("Json","male",Date.valueOf("2000-07-11"),124));
         liste.add(new Personne("Py","male",Date.valueOf("2008-05-24"),138));
-        modelView.setView("../spec.jsp");
+        modelView.setView("./spec.jsp");
         modelView.addItem("pers",liste.get(id.intValue()));
         return modelView;
     }

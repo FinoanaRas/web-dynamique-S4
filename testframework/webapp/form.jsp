@@ -7,13 +7,13 @@
     <title>Document</title>
 </head>
     <body>
-        <form action="info/" method="post">
+        <form action="info.do" method="post">
             <input type="text" name="name">
             <input type="text" name="gender">
             <input type="date" name="dtn">
             <input type="number" name="num">
             <input type="submit" value="valider">
         </form>
-        <a href="informations/?id=0">Marie</a>
+        <a href="informations.do?id=0">Marie</a>
     </body>
 </html>
