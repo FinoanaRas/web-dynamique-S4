@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.sql.Date;
 import java.net.URLDecoder;
 
-@WebServlet(name = "FrontServlet", value = "/")
 public class FrontServlet extends HttpServlet {
     HashMap<String, Mapping> mappingUrls;
 
@@ -159,6 +158,8 @@ public class FrontServlet extends HttpServlet {
             StaxParser staxParser = new StaxParser();
             ServletContext servletContext = getServletContext();
             InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
+
+            // get the head of the path
             String path = staxParser.getRequestUrlHeader(in);
             String[] parts = url.split(path);
             if(parts.length>1){

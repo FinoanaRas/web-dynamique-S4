@@ -35,7 +35,7 @@
         <!-- meme nom que Name -->
         <servlet-name>FrontServlet</servlet-name>
         <!-- izay pattern tiana, de soratana amle url -->
-        <url-pattern>/</url-pattern>
+        <url-pattern>*.do</url-pattern>
     </servlet-mapping>
     
     <Package>model/</Package>
