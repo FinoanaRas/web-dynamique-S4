@@ -41,6 +41,18 @@
           <param-name>sessionProfile</param-name>
           <param-value>profile</param-value>
         </init-param>
+        <init-param>
+          <param-name>Package</param-name>
+          <param-value>model/</param-value>
+        </init-param>
+        <init-param>
+          <param-name>Url</param-name>
+          <param-value>http://localhost:8080/testframework/</param-value>
+        </init-param>
+        <init-param>
+          <param-name>FileFolder</param-name>
+          <param-value>D:\S4\</param-value>
+        </init-param>
     </servlet>
     
     <servlet-mapping>
@@ -50,7 +62,4 @@
         <url-pattern>*.do</url-pattern>
     </servlet-mapping>
     
-    <Package>model/</Package>
-    <Url>http://localhost:8080/testframework/</Url>
-    <File-folder>D:\S4\</File-folder>
 </web-app>
