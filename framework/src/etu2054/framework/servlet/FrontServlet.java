@@ -34,6 +34,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Enumeration;
 import java.sql.Date;
 import java.net.URLDecoder;
@@ -106,9 +107,6 @@ public class FrontServlet extends HttpServlet {
         }
     }
 
-    public void checkAuth(){
-
-    }
 
     public void resetData(Object obj, Class classe) throws Exception{
         Field[] fields = classe.getDeclaredFields();
@@ -364,6 +362,11 @@ public class FrontServlet extends HttpServlet {
 
                     // check if there are sessions to set
                     if(method.isAnnotationPresent(Session.class)){
+                        ArrayList<String> sessions = Collections.list(request.getSession().getAttributeNames());
+                        for(String s: sessions){
+                            System.out.println(s);
+                            System.out.println(request.getSession().getAttribute(s));
+                        }
                         setSessions(request,obj);
                     }
                     // take parameters
@@ -423,6 +426,15 @@ public class FrontServlet extends HttpServlet {
                                 request.getSession().setAttribute(k,sessions.get(k));
                             }
                             System.out.println("profile: "+request.getSession().getAttribute("profile"));
+                        }
+
+                        // if delete session
+                        if(modelView.isInvalidate()){
+                            request.getSession().invalidate();
+                        }
+                        List<String> removedSession = modelView.getRemoveSession();
+                        for(String session : removedSession){
+                            request.getSession().removeAttribute(session);
                         }
 
                         if (modelView.getIsJson() == true) {
