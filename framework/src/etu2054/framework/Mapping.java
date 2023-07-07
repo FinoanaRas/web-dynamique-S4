@@ -1,7 +1,5 @@
 package etu2054.framework;
 
-import etu2054.framework.annotations.UrlAnnot;
-
 public class Mapping {
     String className;
     String method;

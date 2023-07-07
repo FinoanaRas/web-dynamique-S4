@@ -1,6 +1,6 @@
 <%@ page import="model.Personne, java.util.ArrayList"%>
 <%
-    ArrayList<Personne> liste = (ArrayList<Personne>)request.getAttribute("lst");
+    Personne p = (Personne)request.getAttribute("pers");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,14 +11,17 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Informations: liste de personnes</h1>
+    <h1><%= p.getName() %></h1>
     <ul>
-        <% for(Personne p: liste) { %>
-            <li><%= p.getName() %></li>
-            <li><%= p.getGender() %></li>
-            <li><%= p.getNum() %></li>
-            <li><%= p.getDtn() %></li>
-        <% } %>
+        <li><%= p.getGender() %></li>
+        <li><%= p.getNum() %></li>
+        <li><%= p.getDtn() %></li>
+        <li><ul>
+        <%  if(p.getLangues()!=null){
+            for(int i=0;i < p.getLangues().length;i++){ %>
+            <li><%= p.getLangues()[i] %></li>
+        <% } }%>
+        </ul></li>
     </ul>
 </body>
 </html>

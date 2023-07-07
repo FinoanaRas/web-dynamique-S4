@@ -1,21 +1,33 @@
 package etu2054.framework.servlet;
 
+// xml import
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import etu2054.framework.FileUpload;
 import etu2054.framework.Mapping;
 import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
 import etu2054.framework.util.StaxParser;
 
+import java.nio.file.Paths;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Array;
 import java.lang.Double;
 import java.lang.Integer;
 import java.lang.Float;
@@ -26,6 +38,7 @@ import java.util.Enumeration;
 import java.sql.Date;
 import java.net.URLDecoder;
 
+@MultipartConfig
 public class FrontServlet extends HttpServlet {
     HashMap<String, Mapping> mappingUrls;
 
@@ -62,10 +75,21 @@ public class FrontServlet extends HttpServlet {
         }
     }
 
-    public void setData(Class classe,Object obj, String param,String paramgot) throws Exception{
-        Field f = classe.getDeclaredField(param);
-        Class type = getTypeMethod(getMethod("get", f,classe));
-        Method setMethod = getMethod("set",f,classe);
+    public String getFileFolder() throws Exception{
+        // Create a DocumentBuilder
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        // Parse the XML file
+        Document document = builder.parse(new File("/WEB-INF/web.xml"));
+
+        // Retrieve elements by tag name
+        Element folder = (Element) document.getElementsByTagName("FileFolder").item(0);
+
+        return folder.getTextContent();
+    }
+
+    public void setDataHandleTypes(Object obj, String param,String paramgot,Class type,Method setMethod) throws Exception{       
         if (type==Integer.class){
             setMethod.invoke(obj,Integer.valueOf(paramgot));
         }else if ( type==Double.class) {
@@ -77,6 +101,27 @@ public class FrontServlet extends HttpServlet {
         }else{
             Object parametre = paramgot;
             setMethod.invoke(obj,type.cast(parametre));
+        }
+    }
+
+    public void setData(Class classe,Object obj, String param,String[] paramgot) throws Exception{
+        // param is the name of the field, exemple: nom
+        Field f = classe.getDeclaredField(param);
+        Class type = getTypeMethod(getMethod("get", f,classe));
+        Method setMethod = getMethod("set",f,classe);
+        // si paramgot n'a qu'une value
+        if(!f.getType().isArray()){
+            setDataHandleTypes(obj,param,paramgot[0],type,setMethod);
+            // ok
+        }else{
+            // prends le type du component de l'array
+            Class typeComponent = type.getComponentType();
+            // nouvelle instance de tableau
+            Object tableau = Array.newInstance(typeComponent, paramgot.length);
+            for(int i=0;i<paramgot.length;i++){
+                Array.set(tableau,i,paramgot[i]);
+            }
+            setMethod.invoke(obj,tableau);
         }
     }
 
@@ -121,7 +166,6 @@ public class FrontServlet extends HttpServlet {
             if(files[i].isDirectory()){
                 String chemin = path+files[i].getName()+".";
                 classes.addAll(getAllClasses(files[i],chemin));
-
             }else {
 
                 if(files[i].getName().endsWith(".class")){
@@ -129,7 +173,6 @@ public class FrontServlet extends HttpServlet {
                     try {
                         Class c = Class.forName(filename);
                         classes.add(c);
-
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e.getMessage());
                     }
@@ -150,6 +193,48 @@ public class FrontServlet extends HttpServlet {
         }
     }
 
+    private boolean hasFileUpload(Class classe){
+        Field[] fields = classe.getDeclaredFields();
+        for(Field f: fields){
+            if(f.getType().equals(FileUpload.class)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void configureUpload(HttpServletRequest request, Class classe, Object obj, String folderPath) throws Exception{
+        String contentType = request.getContentType();
+        if (contentType != null && contentType.startsWith("multipart/form-data")) {
+            System.out.println("multipart/form-data");
+            // String folderPath = getFileFolder();
+            for (Part filePart : request.getParts()) {
+            System.out.println("multipart/form-data boucle");
+                System.out.println(filePart.getName()+" "+filePart.getSubmittedFileName());
+                // raha mitovy @ ao am field
+                if(checkField(filePart.getName(),classe)==true && classe.getDeclaredField(filePart.getName()).getType().equals(FileUpload.class)){
+                    String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString(); // MSIE fix.
+                    String filePath = folderPath+fileName;
+                    InputStream fileContent = filePart.getInputStream();
+
+                    // put into bytes
+                    byte[] array = fileContent.readAllBytes();
+                    if(!fileName.isEmpty()){
+                        OutputStream os = (OutputStream) new FileOutputStream(filePath);
+                        os.write(array);
+                    }
+                    FileUpload fileUpload = new FileUpload(fileName, filePath, array);
+
+                    // set it
+                    Field f = classe.getDeclaredField(filePart.getName());
+                    Method setMethod = getMethod("set",f,classe);
+
+                    setMethod.invoke(obj,fileUpload);
+                }
+            }
+        }
+    }
+
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException{
         PrintWriter out = response.getWriter();
         String url = request.getRequestURL().toString();
@@ -158,8 +243,6 @@ public class FrontServlet extends HttpServlet {
             StaxParser staxParser = new StaxParser();
             ServletContext servletContext = getServletContext();
             InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
-
-            // get the head of the path
             String path = staxParser.getRequestUrlHeader(in);
             String[] parts = url.split(path);
             if(parts.length>1){
@@ -176,21 +259,35 @@ public class FrontServlet extends HttpServlet {
                     // take parameters
                     Enumeration<String> formParams = request.getParameterNames();
                     ArrayList<String> parametres = new ArrayList<String>();
+                    
+                    // avy @ form
                     if(formParams!=null){
+                        // set all data to default
                         while(formParams.hasMoreElements()){
                             String param = formParams.nextElement();
+                            System.out.println("parameter"+param);
                             parametres.add(param);
                             if(checkField(param,classe)==true){
-                                String paramgot = request.getParameter(param);
+                                String[] paramgot = request.getParameterValues(param);
                                 setData(classe,obj,param,paramgot);
                             }
                         }
                     }
+
+                    if(hasFileUpload(classe)){
+                        System.out.println("has fileUpload");
+                        InputStream in2 = getServletContext().getResourceAsStream("/WEB-INF/web.xml");
+                        String folderPath = staxParser.getFileFolder(in2);
+                        configureUpload(request,classe, obj, folderPath);
+                    }
+
                     if(returnType.equals(ModelView.class)){
                         out.println("has modelView");
                         ModelView modelView = new ModelView();
                         Parameter[] methodParams = method.getParameters();
                         Class[] types = method.getParameterTypes();
+
+                        // sprint-8: avy @ lien
                         if(methodParams!=null){
                             ArrayList<Object> listArgs = new ArrayList<Object>();
                             for(int i=0;i<methodParams.length;i++){
@@ -230,10 +327,7 @@ public class FrontServlet extends HttpServlet {
         }catch(Exception e){
             e.printStackTrace(out);
         }
-//        for(String k: mappingUrls.keySet()){
-//            out.println("key: "+k);
-//            out.println("class: "+mappingUrls.get(k).getClassName()+" method: "+mappingUrls.get(k).getMethod());
-//        }
+
     }
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

@@ -40,5 +40,6 @@
     
     <Package>model/</Package>
     <Url>http://localhost:8082/testframework/</Url>
+    <File-folder>D:\S4\</File-folder>
 
 </web-app>
