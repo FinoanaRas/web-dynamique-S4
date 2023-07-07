@@ -9,6 +9,8 @@ import etu2054.framework.annotations.Session;
 import etu2054.framework.util.StaxParser;
 import etu2054.framework.FileUpload;
 
+import com.google.gson.Gson; 
+
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
@@ -408,7 +410,7 @@ public class FrontServlet extends HttpServlet {
                             }
                         }
 
-                        // check authentification
+                        // set all to sessions
                         HashMap<String,Object> sessions = modelView.getSessions();
                         if(sessions.size()>0){
                             for(String k: sessions.keySet()){
@@ -418,9 +420,14 @@ public class FrontServlet extends HttpServlet {
                             System.out.println("profile: "+request.getSession().getAttribute("profile"));
                         }
 
-                        
+                        if (modelView.getIsJson() == true) {
+                            String json = new Gson().toJson(modelViewData);
+                            out.println("json: " + json);
+                        }else{
+                            request.getRequestDispatcher(view).forward(request,response);
 
-                        request.getRequestDispatcher(view).forward(request,response);
+                        }
+
                     }
                 
             }
