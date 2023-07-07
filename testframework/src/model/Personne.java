@@ -85,4 +85,16 @@ public class Personne {
         modelView.addItem("pers",liste.get(id.intValue()));
         return modelView;
     }
+    @UrlAnnot(url="instancePers.do")
+    public ModelView instance(){
+        ModelView modelView = new ModelView();
+        Integer nbInstance = getNum();
+        if(nbInstance == null){
+            nbInstance = 0;
+        }
+        setNum(nbInstance+1);
+        modelView.setView("./instanceCounter.jsp");
+        modelView.addItem("num",getNum());
+        return modelView;
+    }
 }
