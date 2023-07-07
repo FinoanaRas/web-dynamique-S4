@@ -1,1 +1,1 @@
-call "%CATALINA_HOME%\bin\shutdown"
+"%CATALINA_HOME%\bin\shutdown"

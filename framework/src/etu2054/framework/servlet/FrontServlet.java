@@ -1,22 +1,16 @@
 package etu2054.framework.servlet;
 
-// xml import
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import etu2054.framework.FileUpload;
 import etu2054.framework.Mapping;
 import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
+import etu2054.framework.annotations.Scope;
 import etu2054.framework.util.StaxParser;
+import etu2054.framework.FileUpload;
 
-import java.nio.file.Paths;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
+import java.nio.file.Paths;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,15 +31,19 @@ import java.util.HashMap;
 import java.util.Enumeration;
 import java.sql.Date;
 import java.net.URLDecoder;
+import java.lang.reflect.Array;
 
 @MultipartConfig
+@WebServlet(name = "FrontServlet", value = "/")
 public class FrontServlet extends HttpServlet {
     HashMap<String, Mapping> mappingUrls;
+    HashMap<String, Object> mappingClasses;
 
     @Override
     public void init() throws ServletException {
         super.init();
         mappingUrls = new HashMap<String, Mapping>();
+        mappingClasses = new HashMap<String, Object>();
         File directory = null;
         try {
             StaxParser staxParser = new StaxParser();
@@ -66,6 +64,7 @@ public class FrontServlet extends HttpServlet {
                 ArrayList<Class> classes = getAllClasses(directory,path);
                 for(Class c:classes){
                     configureMapping(c);
+                    configureClasses(c);
                 }
             } else {
                 throw new Exception("package not found: "+resource.getFile());
@@ -75,20 +74,13 @@ public class FrontServlet extends HttpServlet {
         }
     }
 
-    public String getFileFolder() throws Exception{
-        // Create a DocumentBuilder
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-
-        // Parse the XML file
-        Document document = builder.parse(new File("/WEB-INF/web.xml"));
-
-        // Retrieve elements by tag name
-        Element folder = (Element) document.getElementsByTagName("FileFolder").item(0);
-
-        return folder.getTextContent();
+    public void resetData(Object obj, Class classe) throws Exception{
+        Field[] fields = classe.getDeclaredFields();
+        for(Field f: fields){
+            Method setMethod = getMethod("set",f,classe);
+            setMethod.invoke(obj,new Object[]{ null });
+        }
     }
-
     public void setDataHandleTypes(Object obj, String param,String paramgot,Class type,Method setMethod) throws Exception{       
         if (type==Integer.class){
             setMethod.invoke(obj,Integer.valueOf(paramgot));
@@ -166,6 +158,7 @@ public class FrontServlet extends HttpServlet {
             if(files[i].isDirectory()){
                 String chemin = path+files[i].getName()+".";
                 classes.addAll(getAllClasses(files[i],chemin));
+
             }else {
 
                 if(files[i].getName().endsWith(".class")){
@@ -173,6 +166,7 @@ public class FrontServlet extends HttpServlet {
                     try {
                         Class c = Class.forName(filename);
                         classes.add(c);
+
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e.getMessage());
                     }
@@ -191,6 +185,26 @@ public class FrontServlet extends HttpServlet {
                 mappingUrls.put(url,mapping);
             }
         }
+    }
+
+    private void configureClasses(Class classe) throws Exception{
+            if(classe.isAnnotationPresent(Scope.class)){
+                Scope s = (Scope) classe.getAnnotation(Scope.class);
+                String property = s.property();
+                if(property.equals("singleton")){
+                    Object obj = classe.getConstructor().newInstance();
+                    mappingClasses.put(classe.getName(),obj);
+                }
+            }
+    }
+
+    private Object getObjectFromMapping(String name){
+        for(String n: mappingClasses.keySet()){
+            if(n.equals(name)){
+                return mappingClasses.get(n);
+            }
+        }
+        return null;
     }
 
     private boolean hasFileUpload(Class classe){
@@ -253,19 +267,27 @@ public class FrontServlet extends HttpServlet {
                 Mapping mapping = mappingUrls.get(url);
                 out.println("in mapping");
                     Class classe = Class.forName(mapping.getClassName());
+                    Object obj = new Object();
+                    if(classe.isAnnotationPresent(Scope.class)){
+                        Scope s = (Scope) classe.getAnnotation(Scope.class);
+                        String property = s.property();
+                        if(s.property().equals("singleton")){
+                            obj = getObjectFromMapping(mapping.getClassName());
+                            resetData(obj,classe);
+                        }
+                    }else{
+                        obj = classe.getConstructor().newInstance();
+                    }
+
                     Method method = getDeclaredMethod(classe,mapping.getMethod());
                     Class returnType = method.getReturnType();
-                    Object obj = classe.getConstructor().newInstance();
+                    
                     // take parameters
                     Enumeration<String> formParams = request.getParameterNames();
                     ArrayList<String> parametres = new ArrayList<String>();
-                    
-                    // avy @ form
                     if(formParams!=null){
-                        // set all data to default
                         while(formParams.hasMoreElements()){
                             String param = formParams.nextElement();
-                            System.out.println("parameter"+param);
                             parametres.add(param);
                             if(checkField(param,classe)==true){
                                 String[] paramgot = request.getParameterValues(param);
@@ -286,8 +308,6 @@ public class FrontServlet extends HttpServlet {
                         ModelView modelView = new ModelView();
                         Parameter[] methodParams = method.getParameters();
                         Class[] types = method.getParameterTypes();
-
-                        // sprint-8: avy @ lien
                         if(methodParams!=null){
                             ArrayList<Object> listArgs = new ArrayList<Object>();
                             for(int i=0;i<methodParams.length;i++){
