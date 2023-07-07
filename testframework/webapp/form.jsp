@@ -13,6 +13,12 @@
             <input type="date" name="dtn">
             <input type="number" name="num">
             <input type="submit" value="valider">
+            <input type="checkbox" name="langues" value="fr" id="fr">
+            <label for="fr">fr</label>
+            <input type="checkbox" name="langues" value="en" id="en">
+            <label for="en">en</label>
+            <input type="checkbox" name="langues" value="mg" id="mg">
+            <label for="mg">mg</label>
         </form>
         <a href="informations.do?id=0">Marie</a>
     </body>
