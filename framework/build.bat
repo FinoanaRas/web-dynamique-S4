@@ -1,5 +1,6 @@
 javac -d "./" src/etu2054/framework/annotations/UrlAnnot.java
 javac -d "./" src/etu2054/framework/annotations/Scope.java
+javac -d "./" src/etu2054/framework/annotations/Auth.java
 javac -d "./" src/etu2054/framework/Mapping.java
 javac -d "./" src/etu2054/framework/ModelView.java
 javac -d "./" src/etu2054/framework/FileUpload.java

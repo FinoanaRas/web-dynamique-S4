@@ -3,6 +3,7 @@ package etu2054.framework.servlet;
 import etu2054.framework.Mapping;
 import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
+import etu2054.framework.annotations.Auth;
 import etu2054.framework.annotations.Scope;
 import etu2054.framework.util.StaxParser;
 import etu2054.framework.FileUpload;
@@ -31,19 +32,45 @@ import java.util.HashMap;
 import java.util.Enumeration;
 import java.sql.Date;
 import java.net.URLDecoder;
-import java.lang.reflect.Array;
 
 @MultipartConfig
 @WebServlet(name = "FrontServlet", value = "/")
 public class FrontServlet extends HttpServlet {
     HashMap<String, Mapping> mappingUrls;
     HashMap<String, Object> mappingClasses;
+    String sessionName;
+    String sessionProfile;
+    
+
+    public String getSessionName() {
+        return sessionName;
+    }
+
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
+    }
+
+    public String getSessionProfile() {
+        return sessionProfile;
+    }
+
+    public void setSessionProfile(String sessionProfile) {
+        this.sessionProfile = sessionProfile;
+    }
 
     @Override
     public void init() throws ServletException {
         super.init();
         mappingUrls = new HashMap<String, Mapping>();
         mappingClasses = new HashMap<String, Object>();
+        String session_name = String.valueOf(this.getInitParameter("sessionName"));
+        String session_Profile = String.valueOf(this.getInitParameter("sessionProfile"));
+
+        System.out.println(session_Profile);
+        System.out.println(session_name);
+        setSessionName(session_name);
+        setSessionProfile(session_Profile);
+        
         File directory = null;
         try {
             StaxParser staxParser = new StaxParser();
@@ -72,6 +99,10 @@ public class FrontServlet extends HttpServlet {
         } catch (Exception x) {
             throw new ServletException(x.getMessage());
         }
+    }
+
+    public void checkAuth(){
+
     }
 
     public void resetData(Object obj, Class classe) throws Exception{
@@ -247,6 +278,21 @@ public class FrontServlet extends HttpServlet {
                 }
             }
         }
+
+    }
+
+    // Authentification handlers
+    private void handleAuthentification( Method method , HttpServletRequest request ) throws Exception{
+        if( method.isAnnotationPresent(Auth.class) ){
+            Auth auth = method.getAnnotation(Auth.class);
+            Object sessionN = request.getSession().getAttribute(this.getSessionName());
+            System.out.println(sessionN);
+            Object sessionP = request.getSession().getAttribute(this.getSessionProfile());
+            // if its not connected, or its connected and not empty but the profile doesn't match
+            if( sessionN == null || (sessionN != null && !auth.profile().isEmpty()  && !((String) sessionP).equalsIgnoreCase(auth.profile()) ) ){
+                throw new Exception("Sorry You can't access that url with your privileges : " + sessionP+" auth:"+  auth.profile() );
+            }
+        }
     }
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException{
@@ -282,6 +328,7 @@ public class FrontServlet extends HttpServlet {
                     Method method = getDeclaredMethod(classe,mapping.getMethod());
                     Class returnType = method.getReturnType();
                     
+                    handleAuthentification(method, request);
                     // take parameters
                     Enumeration<String> formParams = request.getParameterNames();
                     ArrayList<String> parametres = new ArrayList<String>();
@@ -340,6 +387,21 @@ public class FrontServlet extends HttpServlet {
                                 request.setAttribute(k,modelViewData.get(k));
                             }
                         }
+
+                        // check authentification
+                        HashMap<String,Object> sessions = modelView.getSessions();
+                        if(sessions.size()>0){
+                            for(String k: sessions.keySet()){
+                                System.out.println(getSessionName()+" "+k);
+                                if(k.equals(getSessionName())){
+                                    request.getSession().setAttribute(getSessionName(),sessions.get(k));
+                                }else if(k.equals(getSessionProfile())){
+                                    request.getSession().setAttribute(getSessionProfile(),sessions.get(k));
+                                }
+                            }
+                            System.out.println("profile: "+request.getSession().getAttribute("profile"));
+                        }
+
                         request.getRequestDispatcher(view).forward(request,response);
                     }
                 
