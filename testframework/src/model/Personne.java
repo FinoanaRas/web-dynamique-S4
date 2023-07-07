@@ -1,6 +1,7 @@
 package model;
 import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
+import etu2054.framework.annotations.RestAPI;
 import java.util.ArrayList;
 import java.lang.Integer;
 import java.sql.Date;
@@ -120,5 +121,11 @@ public class Personne {
         // modelView.addItem("personnes",liste);
         modelView.setIsJson(true);
         return modelView;
+    }
+
+    @RestAPI
+    @UrlAnnot(url="persToJsonRest.do")
+    public Personne getPers(){
+        return new Personne("Json","male",Date.valueOf("2000-07-11"),124,new String[] {"fr","mg"});
     }
 }
