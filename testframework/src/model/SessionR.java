@@ -45,4 +45,20 @@ public class SessionR {
         return modelView;
     }
 
+    @UrlAnnot(url = "removeAllSession.do")
+    public ModelView removeAllSessions(){
+        ModelView modelView = new ModelView();
+        modelView.setInvalidate(true);
+        modelView.setView("./form.jsp");
+        return modelView;
+    }
+
+    @UrlAnnot(url = "removeSession.do")
+    public ModelView removeSessions(){
+        ModelView modelView = new ModelView();
+        modelView.removeSession("profile");
+        modelView.setView("./form.jsp");
+        return modelView;
+    }
+
 }
