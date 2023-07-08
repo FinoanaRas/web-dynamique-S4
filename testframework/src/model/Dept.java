@@ -1,9 +1,7 @@
 package model;
 import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
-import java.util.ArrayList;
 import java.lang.Integer;
-import java.sql.Date;
 import etu2054.framework.annotations.Scope;
 
 @Scope(property="singleton")

@@ -67,6 +67,18 @@ public class Personne {
         return modelView;
     }
 
+    @UrlAnnot(url="login.do")
+    public ModelView login(){
+        ModelView modelView = new ModelView();
+        Personne pers = new Personne(getName(),getGender(),getDtn(),getNum(),getLangues());
+        modelView.setView("./info.jsp");
+        modelView.addItem("pers",pers);
+        modelView.addSession("isConnected", "true");
+        modelView.addSession("profile", getName());
+        
+        return modelView;
+    }
+
     @UrlAnnot(url="formulaire.do")
     public ModelView form(){
         ModelView modelView = new ModelView();

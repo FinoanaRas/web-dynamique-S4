@@ -29,6 +29,18 @@
         <servlet-name>FrontServlet</servlet-name>
          <!-- Anaran'ilay class, raha misy package de atao eo alohany  -->
         <servlet-class>etu2054.framework.servlet.FrontServlet</servlet-class>
+        <init-param>
+            <param-name>uploadFolder</param-name>
+            <param-value>D:\S4\</param-value>
+        </init-param>
+        <init-param>
+            <param-name>sessionName</param-name>
+          <param-value>isConnected</param-value>
+        </init-param>
+        <init-param>
+          <param-name>sessionProfile</param-name>
+          <param-value>profile</param-value>
+        </init-param>
     </servlet>
     
     <servlet-mapping>
@@ -39,6 +51,6 @@
     </servlet-mapping>
     
     <Package>model/</Package>
-    <Url>http://localhost:8082/testframework/</Url>
+    <Url>http://localhost:8080/testframework/</Url>
     <File-folder>D:\S4\</File-folder>
 </web-app>
