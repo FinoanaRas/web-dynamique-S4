@@ -7,7 +7,6 @@ import etu2054.framework.annotations.Auth;
 import etu2054.framework.annotations.Scope;
 import etu2054.framework.annotations.Session;
 import etu2054.framework.annotations.RestAPI;
-import etu2054.framework.util.StaxParser;
 import etu2054.framework.FileUpload;
 
 import com.google.gson.Gson; 
@@ -46,7 +45,33 @@ public class FrontServlet extends HttpServlet {
     HashMap<String, Object> mappingClasses;
     String sessionName;
     String sessionProfile;
-    
+    String packageName;
+    String urlLink;
+    String folder;
+
+    public String getPackageName() {
+        return packageName;
+    }
+
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
+    }
+
+    public String getUrlLink() {
+        return urlLink;
+    }
+
+    public void setUrlLink(String urlLink) {
+        this.urlLink = urlLink;
+    }
+
+    public String getFolder() {
+        return folder;
+    }
+
+    public void setFolder(String folder) {
+        this.folder = folder;
+    }
 
     public String getSessionName() {
         return sessionName;
@@ -72,17 +97,15 @@ public class FrontServlet extends HttpServlet {
         String session_name = String.valueOf(this.getInitParameter("sessionName"));
         String session_Profile = String.valueOf(this.getInitParameter("sessionProfile"));
 
-        System.out.println(session_Profile);
-        System.out.println(session_name);
         setSessionName(session_name);
         setSessionProfile(session_Profile);
+        setPackageName(getInitParameter("Package"));
+        setUrlLink(getInitParameter("Url"));
+        setFolder(getInitParameter("FileFolder"));
         
         File directory = null;
         try {
-            StaxParser staxParser = new StaxParser();
-            ServletContext servletContext = getServletContext();
-            InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
-            String path = staxParser.getConfig(in);
+            String path = getPackageName();
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (classLoader == null) {
                 throw new ClassNotFoundException("Can't get class loader.");
@@ -330,10 +353,7 @@ public class FrontServlet extends HttpServlet {
         String url = request.getRequestURL().toString();
         out.println(url);
         try{
-            StaxParser staxParser = new StaxParser();
-            ServletContext servletContext = getServletContext();
-            InputStream in = servletContext.getResourceAsStream("/WEB-INF/web.xml");
-            String path = staxParser.getRequestUrlHeader(in);
+            String path = getUrlLink();
             String[] parts = url.split(path);
             if(parts.length>1){
                 url = parts[1];
@@ -385,8 +405,7 @@ public class FrontServlet extends HttpServlet {
 
                     if(hasFileUpload(classe)){
                         System.out.println("has fileUpload");
-                        InputStream in2 = getServletContext().getResourceAsStream("/WEB-INF/web.xml");
-                        String folderPath = staxParser.getFileFolder(in2);
+                        String folderPath = getFolder();
                         configureUpload(request,classe, obj, folderPath);
                     }
 
