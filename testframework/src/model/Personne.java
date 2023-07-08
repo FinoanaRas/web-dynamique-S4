@@ -109,4 +109,16 @@ public class Personne {
         modelView.addItem("num",getNum());
         return modelView;
     }
+
+    @UrlAnnot(url="persToJson.do")
+    public ModelView json(){
+        ModelView modelView = new ModelView();
+        // ArrayList<Personne> liste = new ArrayList<Personne>();
+        modelView.addItem("p1",new Personne("Marie","female",Date.valueOf("1998-03-04"),35,new String[] {"fr","en","mg"}));
+        modelView.addItem("p2",new Personne("Json","male",Date.valueOf("2000-07-11"),124,new String[] {"fr","mg"}));
+        modelView.addItem("p3",new Personne("Py","male",Date.valueOf("2008-05-24"),138,new String[] {"en","mg"}));
+        // modelView.addItem("personnes",liste);
+        modelView.setIsJson(true);
+        return modelView;
+    }
 }

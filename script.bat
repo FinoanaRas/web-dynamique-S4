@@ -29,6 +29,7 @@ copy ..\testframework\webapp\simple.jsp .
 
 copy ..\testframework\webapp\WEB-INF\classes\model WEB-INF\classes\model
 copy ..\testframework\webapp\WEB-INF\web.xml WEB-INF
+copy ..\testframework\webapp\WEB-INF\lib\gson-2.8.2.jar WEB-INF\lib
 
 copy ..\testframework\webapp\assets\css\style.css assets\css\style.css
 
