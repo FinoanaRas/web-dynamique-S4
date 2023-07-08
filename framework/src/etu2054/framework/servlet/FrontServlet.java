@@ -6,6 +6,7 @@ import etu2054.framework.annotations.UrlAnnot;
 import etu2054.framework.annotations.Auth;
 import etu2054.framework.annotations.Scope;
 import etu2054.framework.annotations.Session;
+import etu2054.framework.annotations.RestAPI;
 import etu2054.framework.util.StaxParser;
 import etu2054.framework.FileUpload;
 
@@ -242,6 +243,20 @@ public class FrontServlet extends HttpServlet {
         return null;
     }
 
+    private void setAttributs(ArrayList<Object> listArgs, String p, Class type, HttpServletRequest request){
+        if (type==Integer.class){
+            listArgs.add(Integer.valueOf(request.getParameter(p)));
+        }else if ( type==Double.class) {
+            listArgs.add(Double.valueOf(request.getParameter(p)));
+        }else if ( type==Float.class) {
+            listArgs.add(Float.valueOf(request.getParameter(p)));
+        }else if(type == Date.class){
+            listArgs.add(Date.valueOf(request.getParameter(p)));
+        }else{
+            listArgs.add(type.cast(request.getParameter(p)));
+        }
+    }
+
     private boolean hasFileUpload(Class classe){
         Field[] fields = classe.getDeclaredFields();
         for(Field f: fields){
@@ -382,17 +397,7 @@ public class FrontServlet extends HttpServlet {
                             for(int i=0;i<methodParams.length;i++){
                                 for(String p: parametres){
                                     if(methodParams[i].getName().equals(p)){
-                                        if (types[i]==Integer.class){
-                                            listArgs.add(Integer.valueOf(request.getParameter(p)));
-                                        }else if ( types[i]==Double.class) {
-                                            listArgs.add(Double.valueOf(request.getParameter(p)));
-                                        }else if ( types[i]==Float.class) {
-                                            listArgs.add(Float.valueOf(request.getParameter(p)));
-                                        }else if(types[i] == Date.class){
-                                            listArgs.add(Date.valueOf(request.getParameter(p)));
-                                        }else{
-                                            listArgs.add(types[i].cast(request.getParameter(p)));
-                                        }
+                                        setAttributs(listArgs,p,types[i],request);
                                     }
                                 }
                             }
@@ -428,6 +433,29 @@ public class FrontServlet extends HttpServlet {
 
                         }
 
+                    }else{
+                        if(method.isAnnotationPresent(RestAPI.class)){
+                            Object retour = new Object();
+                            Parameter[] methodParams = method.getParameters();
+                            Class[] types = method.getParameterTypes();
+                            if(methodParams!=null){
+                                ArrayList<Object> listArgs = new ArrayList<Object>();
+                                for(int i=0;i<methodParams.length;i++){
+                                    for(String p: parametres){
+                                        if(methodParams[i].getName().equals(p)){
+                                            setAttributs(listArgs,p,types[i],request);
+                                        }
+                                    }
+                                }
+                                Object[] args = new Object[listArgs.size()];
+                                args = listArgs.toArray(args);
+                                retour = method.invoke(obj,args);
+                            }else{
+                                retour = method.invoke(obj);
+                            }
+                            String json = new Gson().toJson(returnType.cast(retour));
+                            out.println("json: " + json);
+                        }
                     }
                 
             }
