@@ -5,6 +5,7 @@ import etu2054.framework.ModelView;
 import etu2054.framework.annotations.UrlAnnot;
 import etu2054.framework.annotations.Auth;
 import etu2054.framework.annotations.Scope;
+import etu2054.framework.annotations.Session;
 import etu2054.framework.util.StaxParser;
 import etu2054.framework.FileUpload;
 
@@ -28,6 +29,7 @@ import java.lang.Integer;
 import java.lang.Float;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Enumeration;
 import java.sql.Date;
@@ -295,6 +297,19 @@ public class FrontServlet extends HttpServlet {
         }
     }
 
+    // set the sessions
+    private void setSessions( HttpServletRequest request, Object obj ) throws Exception{
+        ArrayList<String> sessions = Collections.list(request.getSession().getAttributeNames());
+        HashMap<String, Object> sessionCopy = new HashMap<String, Object>();
+        for (String attribute : sessions) {
+            Object value = request.getSession().getAttribute(attribute);
+            System.out.println(attribute+" "+value);
+            sessionCopy.put( attribute , value );
+        }
+        Method sessionMethod = obj.getClass().getDeclaredMethod("setSessions", HashMap.class);
+        sessionMethod.invoke( obj, sessionCopy );
+    }
+
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException{
         PrintWriter out = response.getWriter();
         String url = request.getRequestURL().toString();
@@ -319,7 +334,7 @@ public class FrontServlet extends HttpServlet {
                         String property = s.property();
                         if(s.property().equals("singleton")){
                             obj = getObjectFromMapping(mapping.getClassName());
-                            resetData(obj,classe);
+                            // resetData(obj,classe);
                         }
                     }else{
                         obj = classe.getConstructor().newInstance();
@@ -329,6 +344,11 @@ public class FrontServlet extends HttpServlet {
                     Class returnType = method.getReturnType();
                     
                     handleAuthentification(method, request);
+
+                    // check if there are sessions to set
+                    if(method.isAnnotationPresent(Session.class)){
+                        setSessions(request,obj);
+                    }
                     // take parameters
                     Enumeration<String> formParams = request.getParameterNames();
                     ArrayList<String> parametres = new ArrayList<String>();
@@ -393,14 +413,12 @@ public class FrontServlet extends HttpServlet {
                         if(sessions.size()>0){
                             for(String k: sessions.keySet()){
                                 System.out.println(getSessionName()+" "+k);
-                                if(k.equals(getSessionName())){
-                                    request.getSession().setAttribute(getSessionName(),sessions.get(k));
-                                }else if(k.equals(getSessionProfile())){
-                                    request.getSession().setAttribute(getSessionProfile(),sessions.get(k));
-                                }
+                                request.getSession().setAttribute(k,sessions.get(k));
                             }
                             System.out.println("profile: "+request.getSession().getAttribute("profile"));
                         }
+
+                        
 
                         request.getRequestDispatcher(view).forward(request,response);
                     }
